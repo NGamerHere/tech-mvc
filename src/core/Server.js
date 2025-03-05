@@ -34,25 +34,26 @@ class Server {
     start() {
         http.createServer(async (req, res) => {
             const urlParts = req.url.split("/").filter(Boolean);
+            const requestMethod = req.method;
             if (urlParts.length === 2) {
                 const [className, methodName] = urlParts;
 
-                if (this.controllers[className] && typeof this.controllers[className][methodName] === "function") {
+                if (this.controllers[className] && typeof this.controllers[className][methodName+requestMethod] === "function") {
                     try {
-                        const result = await this.controllers[className][methodName]();
+                        const result = await this.controllers[className][methodName+requestMethod]();
                         res.writeHead(200, { "Content-Type": "application/json" });
                         res.end(JSON.stringify(result));
                     } catch (err) {
-                        res.writeHead(500, { "Content-Type": "text/plain" });
-                        res.end("Internal Server Error");
+                        res.writeHead(500, { "Content-Type": "application/json" });
+                        res.end(JSON.stringify({message: "internal server error"}));
                     }
                 } else {
-                    res.writeHead(404, { "Content-Type": "text/plain" });
-                    res.end("Class or method not found");
+                    res.writeHead(404, { "Content-Type": "application/json" });
+                    res.end(JSON.stringify({message: "route not found"}));
                 }
             } else {
-                res.writeHead(400, { "Content-Type": "text/plain" });
-                res.end("Invalid URL format. Use /ClassName/MethodName");
+                res.writeHead(400, { "Content-Type": "application/json" });
+                res.end(JSON.stringify({message:"Invalid URL format. Use /ClassName/MethodName"}));
             }
         }).listen(this.port, () => {
             console.log(`Server running at http://localhost:${this.port}`);
